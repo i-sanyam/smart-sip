@@ -5,8 +5,8 @@ const moment = require('moment');
 const csvWriter = require('csv-writer');
 
 const FILE_PATH = 'stock_prices.csv';
-const fetchIndexHistoryFromNSE = async (indexName = 'NIFTY200MOMENTM30', startDate, endDate) => {
-  const response = await axios.post('https://www.niftyindices.com/Backpage.aspx/getHistoricaldatatabletoString', {
+const fetchIndexHistoryFromNSE = async (indexName, startDate, endDate) => {
+  const response = await axios.post('https://www.niftyindices.com/Backpage.aspx/getTotalReturnIndexString', {
     name: indexName,
     startDate: moment(startDate).format('DD-MMM-YYYY'),
     endDate: moment(endDate).format('DD-MMM-YYYY'),
@@ -35,11 +35,11 @@ const fetchIndexHistoryFromNSE = async (indexName = 'NIFTY200MOMENTM30', startDa
   }
 
   const datesData = JSON.parse(response.data.d);
-  const stockPrices = datesData.map(({ INDEX_NAME, CLOSE, HistoricalDate }) => {
+  const stockPrices = datesData.map(({ TotalReturnsIndex, Date: nseDate }) => {
     return {
-      INDEX_NAME,
-      PRICE: CLOSE,
-      DATE: new Date(HistoricalDate).toISOString().slice(0, 10),
+      INDEX_NAME: indexName,
+      PRICE: TotalReturnsIndex,
+      DATE: new Date(nseDate).toISOString().slice(0, 10),
       // OPEN: dateData.OPEN,
       // HIGH: dateData.HIGH,
       // LOW: dateData.LOW,
