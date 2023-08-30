@@ -77,7 +77,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   });
 
   const currentDate = new Date(startDate);
-  const indexesToFetch = lodash.uniq(investmentPattern.map(({ index }) => index));
+  const indexesToFetch = lodash.uniq(sipDetails.map(({ index }) => index));
   const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch);
 
   const investedMap = {};
@@ -151,4 +151,6 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   }
 };
 
-generateInvestmentPattern(START_DATE, END_DATE, SIP_DETAILS);
+(async () => {
+  await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS);
+})();

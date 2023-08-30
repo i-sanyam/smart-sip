@@ -2,7 +2,7 @@ const csvWriter = require('csv-writer');
 
 const initialise = async (filePath, { header, append = true, }) => {
   return csvWriter.createObjectCsvWriter({
-    path: FILE_PATH,
+    path: filePath,
     header,
     append,
   });
