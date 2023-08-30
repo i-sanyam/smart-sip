@@ -1,4 +1,4 @@
-const START_DATE = '2021-01-01';
+const START_DATE = '2011-01-01';
 const END_DATE = '2023-07-31';
 
 const INVESTMENT_DETAILS_FILE_PATH = 'investment_details.csv';
@@ -22,7 +22,6 @@ const getIndexToMonthStockPricesMap = async (indexes, currentDate) => {
 const getStockPriceFromMap = (stockPricesArray, date) => {
   const stockPrice = stockPricesArray.find(stockPrice => stockPrice.DATE === date);
   if (!stockPrice) {
-    const duplicateArray = [...stockPricesArray];
     let minDiff = Number.MAX_SAFE_INTEGER; let usedRecord;
     for (const stockRecord of stockPricesArray) {
       const diff = Math.abs(moment(date).diff(stockRecord.DATE, 'days'));
@@ -162,8 +161,8 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 (async () => {
   try {
     const SIP_DETAILS = [
-      { day: 1, amount: 5000, index: 'NIFTY200MOMENTM30' },
-      { day: 1, amount: 5000, index: 'NIFTY500 VALUE 50' },
+      // { day: 1, amount: 5000, index: 'NIFTY200MOMENTM30' },
+      // { day: 1, amount: 5000, index: 'NIFTY500 VALUE 50' },
       { day: 1, amount: 5000, index: 'NIFTY 50' },
     ];
     let currentDay = 1;
@@ -171,7 +170,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     let maxGainPercentEnd = 0;
     let minGainPercentEnd = 100;
     let worstDay = 1;
-    while (currentDay < 32) {
+    while (currentDay < 29) {
       const gainPercentEnd = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS.map(sip => {
         return {
           ...sip,
