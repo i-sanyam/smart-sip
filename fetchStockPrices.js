@@ -65,7 +65,8 @@ const saveStockPrices = async (filePathToUse, stockPrices) => {
 
 const fetchStockPrices = async (indexName, startDate, endDate) => {
   // Check if stock prices are already available in the CSV file
-  const filePathToUse = `${indexName}_FILE_PATH`;
+  indexName = indexName.toUpperCase();
+  const filePathToUse = `${indexName}_${FILE_PATH}`;
   const results = await new Promise((resolve) => {
     const fileExists = fs.existsSync(filePathToUse);
     if (!fileExists) {
@@ -75,7 +76,7 @@ const fetchStockPrices = async (indexName, startDate, endDate) => {
     fs.createReadStream(filePathToUse)
     .pipe(csvParser())
     .on('data', (data) => {
-      if (data.INDEX_NAME === indexName) {
+      if (data.INDEX_NAME.toUpperCase() === indexName.toUpperCase()) {
         if (data.DATE >= startDate && data.DATE <= endDate) {
           records.push(data);
         }
@@ -83,7 +84,7 @@ const fetchStockPrices = async (indexName, startDate, endDate) => {
     })
     .on('end', () => {
       if (records.length > 0) {
-        console.log('Stock prices found in CSV file:', records.length);
+        console.log(indexName, startDate, endDate, 'Stock prices found in CSV file:', records.length);
       }
       return resolve(records);
     });
@@ -93,7 +94,7 @@ const fetchStockPrices = async (indexName, startDate, endDate) => {
     // If stock prices are not available in the CSV file, fetch them from the API
     const stockPrices = await fetchIndexHistoryFromNSE(indexName, startDate, endDate);
     await saveStockPrices(filePathToUse, stockPrices);
-    console.log('Stock prices fetched from API:', stockPrices.length);
+    console.log(indexName, startDate, endDate, 'Stock prices fetched from API:', stockPrices.length);
     results.push(...stockPrices);
   }
   return results;;

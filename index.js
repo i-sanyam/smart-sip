@@ -170,7 +170,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     let maxGainPercentEnd = 0;
     let minGainPercentEnd = 100;
     let worstDay = 1;
-    while (currentDay < 29) {
+    while (currentDay < 29) { // if you use while loop that returns sheets do not make sense as of now
       const gainPercentEnd = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS.map(sip => {
         return {
           ...sip,
