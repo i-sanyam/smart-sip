@@ -1,5 +1,6 @@
-const START_DATE = '2011-01-01';
-const END_DATE = '2023-07-31';
+const START_DATE = '2020-08-01';
+const END_DATE = '2023-08-31';
+const SWITCH = true;
 
 const INVESTMENT_DETAILS_FILE_PATH = 'investment_details.csv';
 
@@ -30,7 +31,7 @@ const getStockPriceFromMap = (stockPricesArray, date) => {
         usedRecord = stockRecord;
       }
     }
-    console.error(`Stock price not found for date: ${date}, so I am using ${usedRecord.DATE}`);
+    // console.error(`Stock price not found for date: ${date}, so I am using ${usedRecord.DATE}`);
     return usedRecord.PRICE;
   }
   return stockPrice.PRICE;
@@ -51,7 +52,7 @@ const generateReturnFilesMap = async (indexes) => {
   const header = [
     { id: 'INDEX_NAME', title: 'Index Name' },
     { id: 'DATE', title: 'Date' },
-    { id: 'TODAY_PRICE', title: 'Price' },
+    { id: 'PRICE', title: 'Price' },
     { id: 'UNITS', title: 'Units', },
     { id: 'INVESTED_AMOUNT', title: 'Amount', },
     { id: 'GAIN', title: 'GAIN', },
@@ -67,6 +68,40 @@ const generateReturnFilesMap = async (indexes) => {
     header, append: false,
   });
   return indexToReturnsFileMap;
+};
+
+const generateBearishIndexesMap = async (indexes, date) => {
+  // date is always first of month
+  const bearishIndexesMap = {};
+  const datesToCheck = [1,2,3].map((num) => {
+    return moment(date).subtract(num,'month').endOf('month').format('YYYY-MM-DD');
+  });
+
+  const indexesStockPriceMap = {};
+
+  for (const index of indexes) {
+    let minPrice = Number.MAX_SAFE_INTEGER, maxPrice = 0;
+    for (const dateToCheck of datesToCheck) {
+      const indexToStockMap = await getIndexToMonthStockPricesMap([index], dateToCheck);
+      const stockPrice = getStockPriceFromMap(indexToStockMap[index], dateToCheck);
+      if (stockPrice < minPrice) {
+        minPrice = stockPrice;
+      }
+      if (stockPrice > maxPrice) {
+        maxPrice = stockPrice;
+      }
+    }
+    const indexToStockMap = await getIndexToMonthStockPricesMap([index], date);
+    const stockPrice = getStockPriceFromMap(indexToStockMap[index], date);
+    if (stockPrice > 1.2 * minPrice) {
+      bearishIndexesMap[index] = { positive: 1, };
+    }
+    if ( stockPrice < 0.8 * maxPrice) {
+      bearishIndexesMap[index] = { negative: 1, };
+    }
+  }
+  
+  return bearishIndexesMap;
 };
 
 const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
@@ -87,6 +122,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 
   const investedMap = {};
   let toRet = 0;
+  let lastSip;
 
   while (currentDate <= endDate) {
     const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
@@ -111,7 +147,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
         { 
           INDEX_NAME: index,
           DATE: firstDateMonth,
-          TODAY_PRICE: todayStockPrice.PRICE,
+          PRICE: todayStockPrice,
           UNITS: units,
           INVESTED_AMOUNT: amount,
           GAIN: gainAmount,
@@ -119,12 +155,13 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
         }
       ]);
     };
+
     // summarize
     await csvHelper.write(indexToReturnsFileMap.total, [
       { 
         INDEX_NAME: 'total',
         DATE: firstDateMonth,
-        TODAY_PRICE: 'Not Valid',
+        PRICE: 'Not Valid',
         UNITS: 'Not Valid',
         INVESTED_AMOUNT: totalInvestedAtEOM,
         GAIN: totalGainAtEOM,
@@ -132,9 +169,14 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
       }
     ]);
     toRet = 100 * totalGainAtEOM/totalInvestedAtEOM;
+
+    // const bearishIndexesMap = generateBearishIndexesMap(indexesToFetch, firstDateMonth);
     
     // make sips for month
     for (const { index, day, amount, } of sipDetails) {
+      if (SWITCH) {
+
+      }
       const dateStr = moment(currentDate).set('date', day).format('YYYY-MM-DD');
 
       // calculate the units to buy for sip
@@ -155,6 +197,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     }
     currentDate.setMonth(currentDate.getMonth() + 1);
   }
+
   return toRet;
 };
 
@@ -168,9 +211,9 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     let currentDay = 1;
     let bestDay = 1;
     let maxGainPercentEnd = 0;
-    let minGainPercentEnd = 100;
+    let minGainPercentEnd = Number.MAX_SAFE_INTEGER;
     let worstDay = 1;
-    while (currentDay < 29) { // if you use while loop that returns sheets do not make sense as of now
+    // while (currentDay < 29) { // if you use while loop that returns sheets do not make sense as of now
       const gainPercentEnd = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS.map(sip => {
         return {
           ...sip,
@@ -186,7 +229,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
         worstDay = currentDay;
       }
       currentDay++;
-    }
+    // }
     return console.log(`
       Best day: ${bestDay}, Best gain: ${maxGainPercentEnd}
       Worst day: ${worstDay} Worst gain: ${minGainPercentEnd}
