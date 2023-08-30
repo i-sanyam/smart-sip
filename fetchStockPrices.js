@@ -76,11 +76,11 @@ const fetchStockPrices = async (indexName, startDate, endDate) => {
     fs.createReadStream(filePathToUse)
     .pipe(csvParser())
     .on('data', (data) => {
-      if (data.INDEX_NAME.toUpperCase() === indexName.toUpperCase()) {
+      // if (data.INDEX_NAME.toUpperCase() === indexName.toUpperCase()) {
         if (data.DATE >= startDate && data.DATE <= endDate) {
           records.push(data);
         }
-      }
+      // }
     })
     .on('end', () => {
       if (records.length > 0) {
