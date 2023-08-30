@@ -70,14 +70,15 @@ const generateReturnFilesMap = async (indexes) => {
   return indexToReturnsFileMap;
 };
 
-const generateBearishIndexesMap = async (indexes, date) => {
+const generateBearishIndexesMap = async (indexes, inputCurrentDate) => {
   // date is always first of month
+  const date = moment(inputCurrentDate).startOf('month').format('YYYY-MM-DD');
   const bearishIndexesMap = {};
   const datesToCheck = [1,2,3].map((num) => {
     return moment(date).subtract(num,'month').endOf('month').format('YYYY-MM-DD');
   });
 
-  const indexesStockPriceMap = {};
+  // const indexesStockPriceMap = {};
 
   for (const index of indexes) {
     let minPrice = Number.MAX_SAFE_INTEGER, maxPrice = 0;
@@ -93,11 +94,11 @@ const generateBearishIndexesMap = async (indexes, date) => {
     }
     const indexToStockMap = await getIndexToMonthStockPricesMap([index], date);
     const stockPrice = getStockPriceFromMap(indexToStockMap[index], date);
-    if (stockPrice > 1.2 * minPrice) {
+    if (index === 'NIFTY200MOMENTM30' && stockPrice > 1.2 * minPrice) {
       bearishIndexesMap[index] = { positive: 1, };
     }
-    if ( stockPrice < 0.8 * maxPrice) {
-      bearishIndexesMap[index] = { negative: 1, };
+    if ( index === 'NIFTY500 VALUE 50' && stockPrice < 0.8 * maxPrice) {
+      bearishIndexesMap[index] = { positive: 1, };
     }
   }
   
@@ -170,20 +171,38 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch);
 
   const investedMap = {};
-  // let lastSip = 'NIFTY200MOMENTM30';
+  let lastSip = 'NIFTY200MOMENTM30';
 
   while (currentDate <= endDate) {
     const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
     // calculate returns until now & summarize
     const returnsForThisMonth = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
 
-    // const bearishIndexesMap = generateBearishIndexesMap(indexesToFetch, firstDateMonth);
+    const bearishIndexesMap = await generateBearishIndexesMap(indexesToFetch, currentDate);
     
     // make sips for month
     for (const { index, day, amount, } of sipDetails) {
-      // if (SWITCH && bearishIndexesMap[index] && bearishIndexesMap[index].negative) {
-      //   continue;
-      // }
+      if (SWITCH) {
+        // need to reconsider
+        const otherIndex = indexesToFetch.find(indexToCheck => indexToCheck !== index);
+        const isOtherIndexBetter = bearishIndexesMap[otherIndex] && bearishIndexesMap[otherIndex].positive;
+        if (isOtherIndexBetter) {
+          continue;
+        }
+        // other index is not better
+        const isThisIndexBetter = bearishIndexesMap[index] && bearishIndexesMap[index].positive;
+        if (lastSip !== index) {
+          if (isThisIndexBetter) {
+            console.log(currentDate, 'need to switch', index);
+            lastSip = index;
+            // use this index, it is better;
+          } else {
+            // skip this index;
+            continue;
+          }
+        }
+      }
+
       const dateStr = moment(currentDate).set('date', day).format('YYYY-MM-DD');
 
       // calculate the units to buy for sip
@@ -213,11 +232,11 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 (async () => {
   try {
     const SIP_DETAILS = [
-      { day: 1, amount: 5000, index: 'NIFTY200MOMENTM30' },
-      { day: 1, amount: 5000, index: 'NIFTY500 VALUE 50' },
+      { day: 1, amount: 10000, index: 'NIFTY200MOMENTM30' },
+      { day: 1, amount: 10000, index: 'NIFTY500 VALUE 50' },
       // { day: 1, amount: 5000, index: 'NIFTY 50' },
     ];
-    let currentDay = 25;
+    let currentDay = 22;
     let bestDay = 1;
     let maxGainPercentEnd = 0;
     let minGainPercentEnd = Number.MAX_SAFE_INTEGER;
