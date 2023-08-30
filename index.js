@@ -7,16 +7,15 @@ const SIP_DETAILS = [
 const INVESTMENT_DETAILS_FILE_PATH = 'investment_details.csv';
 
 const lodash = require('lodash');
+const moment = require('moment');
 const { fetchStockPrices } = require('./fetchStockPrices');
 const csvHelper = require('./csvHelper');
 
-const getIndexToMonthStockPricesMap = async (indexes, date) => {
-  const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
-  const startDate = new Date(currentYear, currentMonth, 1).toISOString().slice(0, 10);
-  const endDate = new Date(currentYear, currentMonth + 1, 0).toISOString().slice(0, 10);
+const getIndexToMonthStockPricesMap = async (indexes, currentDate) => {
+  const startDate = moment(currentDate).startOf('month').format('YYYY-MM-DD');
+  const endDate = moment(currentDate).endOf('month').format('YYYY-MM-DD');
   const indexToStockPricesMap = {};
-  for (const index of indexesToFetch) {
+  for (const index of indexes) {
     const stockPrices = await fetchStockPrices(index, startDate, endDate);
     indexToStockPricesMap[index] = stockPrices;
   }
@@ -85,7 +84,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   while (currentDate <= endDate) {
     const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
     // calculate returns until now
-    const firstDateMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).toISOString().slice(0, 10);
+    const firstDateMonth = moment(currentDate).startOf('month').format('YYYY-MM-DD');
     let totalGainAtEOM = 0;
     let totalInvestedAtEOM = 0;
     for (const index of indexesToFetch) {
@@ -152,5 +151,9 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 };
 
 (async () => {
-  await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS);
+  try {
+    await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS);
+  } catch (e) {
+    console.error(e);
+  }
 })();
