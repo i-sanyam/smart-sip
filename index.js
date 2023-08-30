@@ -152,7 +152,24 @@ const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexT
     ]);
     toRet = 100 * totalGainAtEOM/totalInvestedAtEOM;
     return toRet;
-}
+};
+
+const getThisMonthSip = async (indexesToFetch, currentDate, lastSip) => {
+  if (!SWITCH) {
+    return false;
+  }
+  const bearishIndexesMap = await generateBearishIndexesMap(indexesToFetch, currentDate);
+  let prefferedSip;
+  for (const index in bearishIndexesMap) {
+    if (bearishIndexesMap[index].positive) {
+      if (prefferedSip) {
+        throw new Error('Error: more than one index is positive', currentDate);
+      }
+      prefferedSip = index;
+    }
+  }
+  return prefferedSip || lastSip;
+};
 
 const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   const investmentDetailsFile = await csvHelper.initialise(INVESTMENT_DETAILS_FILE_PATH, {
@@ -171,36 +188,17 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch);
 
   const investedMap = {};
-  let lastSip = 'NIFTY200MOMENTM30';
 
   while (currentDate <= endDate) {
     const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
     // calculate returns until now & summarize
     const returnsForThisMonth = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
 
-    const bearishIndexesMap = await generateBearishIndexesMap(indexesToFetch, currentDate);
-    
+    const sipForThisMonth = await getThisMonthSip(indexesToFetch, currentDate, 'NIFTY200MOMENTM30');
     // make sips for month
     for (const { index, day, amount, } of sipDetails) {
-      if (SWITCH) {
-        // need to reconsider
-        const otherIndex = indexesToFetch.find(indexToCheck => indexToCheck !== index);
-        const isOtherIndexBetter = bearishIndexesMap[otherIndex] && bearishIndexesMap[otherIndex].positive;
-        if (isOtherIndexBetter) {
-          continue;
-        }
-        // other index is not better
-        const isThisIndexBetter = bearishIndexesMap[index] && bearishIndexesMap[index].positive;
-        if (lastSip !== index) {
-          if (isThisIndexBetter) {
-            console.log(currentDate, 'need to switch', index);
-            lastSip = index;
-            // use this index, it is better;
-          } else {
-            // skip this index;
-            continue;
-          }
-        }
+      if (sipForThisMonth && sipForThisMonth !== index) {
+        continue;
       }
 
       const dateStr = moment(currentDate).set('date', day).format('YYYY-MM-DD');
@@ -236,7 +234,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
       { day: 1, amount: 10000, index: 'NIFTY500 VALUE 50' },
       // { day: 1, amount: 5000, index: 'NIFTY 50' },
     ];
-    let currentDay = 22;
+    let currentDay = 1;
     let bestDay = 1;
     let maxGainPercentEnd = 0;
     let minGainPercentEnd = Number.MAX_SAFE_INTEGER;
