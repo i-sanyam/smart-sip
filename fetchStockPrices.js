@@ -1,12 +1,15 @@
 const csvParser = require('csv-parser');
 const fs = require('fs');
 const axios = require('axios');
+const moment = require('moment');
 const csvWriter = require('csv-writer');
 
 const FILE_PATH = 'stock_prices.csv';
 const fetchIndexHistoryFromNSE = async (indexName = 'NIFTY200MOMENTM30', startDate, endDate) => {
   const response = await axios.post('https://www.niftyindices.com/Backpage.aspx/getHistoricaldatatabletoString', {
-    name: indexName, startDate, endDate,
+    name: indexName,
+    startDate: moment(startDate).format('DD-MMM-YYYY'),
+    endDate: moment(endDate).format('DD-MMM-YYYY'),
   }, {
     headers: {
       'Accept': 'application/json, text/javascript, */*; q=0.01',
@@ -47,40 +50,49 @@ const fetchIndexHistoryFromNSE = async (indexName = 'NIFTY200MOMENTM30', startDa
 
 const saveStockPrices = async (stockPrices) => {
   // Store the stock prices in the CSV file
+  const fileExists = fs.existsSync(FILE_PATH);
   const csvWriteInstance = csvWriter.createObjectCsvWriter({
     path: FILE_PATH,
     header: [
-      { id: 'INDEX_NAME', title: 'Index Name' },
-      { id: 'DATE', title: 'Date' },
-      { id: 'PRICE', title: 'Price' }
+      { id: 'INDEX_NAME', title: 'INDEX_NAME' },
+      { id: 'DATE', title: 'DATE' },
+      { id: 'PRICE', title: 'PRICE' },
     ],
-    append: true
+    append: fileExists,
   });
   await csvWriteInstance.writeRecords(stockPrices);
 };
 
 const fetchStockPrices = async (indexName, startDate, endDate) => {
   // Check if stock prices are already available in the CSV file
-  const results = [];
-  const csvStream = fs.createReadStream(FILE_PATH)
+  const results = await new Promise((resolve) => {
+    const fileExists = fs.existsSync(FILE_PATH);
+    if (!fileExists) {
+      return resolve([]);
+    }
+    const records = [];
+    fs.createReadStream(FILE_PATH)
     .pipe(csvParser())
     .on('data', (data) => {
-      if (data.DATE >= startDate && data.DATE <= endDate) {
-        results.push(data);
+      if (data.INDEX_NAME === indexName && data.DATE >= startDate && data.DATE <= endDate) {
+        records.push(data);
       }
     })
-    .on('end', async () => {
-      if (results.length > 0) {
-        console.log('Stock prices found in CSV file:', results[0].prices);
-        return;
+    .on('end', () => {
+      if (records.length > 0) {
+        console.log('Stock prices found in CSV file:', records.length);
       }
-      // If stock prices are not available in the CSV file, fetch them from the API
-      const stockPrices = await fetchIndexHistoryFromNSE(indexName, startDate, endDate);
-      await saveStockPrices(stockPrices);
-      console.log('Stock prices fetched from API:', stockPrices);
-      results.push(...stockPrices);
-      return;
+      return resolve(records);
     });
+  });
+
+  if (results.length === 0) {
+    // If stock prices are not available in the CSV file, fetch them from the API
+    const stockPrices = await fetchIndexHistoryFromNSE(indexName, startDate, endDate);
+    await saveStockPrices(stockPrices);
+    console.log('Stock prices fetched from API:', stockPrices.length);
+    results.push(...stockPrices);
+  }
   return results;;
 };
 

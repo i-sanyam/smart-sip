@@ -25,9 +25,14 @@ const getIndexToMonthStockPricesMap = async (indexes, currentDate) => {
 const getStockPriceFromMap = (stockPricesArray, date) => {
   const stockPrice = stockPricesArray.find(stockPrice => stockPrice.DATE === date);
   if (!stockPrice) {
-    throw new Error(`Stock price not found for date: ${date}`);
+    const duplicateArray = [...stockPricesArray];
+    const sortedStockPrices = lodash.sortBy(duplicateArray.filter(stockPrice => {
+      return true; // stockPrice.DATE < date; // remove all old dates
+    }), 'DATE');
+    console.error(`Stock price not found for date: ${date}, so I am using ${sortedStockPrices[0].DATE}`);
+    return sortedStockPrices[0].PRICE;
   }
-  return stockPrice;
+  return stockPrice.PRICE;
 };
 
 const addToInvestedMap = (map, index, amount, units) => {
@@ -94,7 +99,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
       }
       const { amount, units, } = indexInvestmentDetails;
       const todayStockPrice = getStockPriceFromMap(indexToStockPricesMap[index], firstDateMonth);
-      const gainAmount = (units * todayPrice) - amount;
+      const gainAmount = (units * todayStockPrice) - amount;
       const gainPercentage = (gainAmount / amount) * 100;
 
       totalGainAtEOM += gainAmount;
@@ -127,8 +132,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     
     // make sips for month
     for (const { index, day, amount, } of sipDetails) {
-      const thisDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-      const dateStr = thisDate.toISOString().slice(0, 10);
+      const dateStr = moment(currentDate).set('date', day).format('YYYY-MM-DD');
 
       // calculate the units to buy for sip
       const price = getStockPriceFromMap(indexToStockPricesMap[index], dateStr);
