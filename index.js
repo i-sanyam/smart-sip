@@ -1,5 +1,5 @@
-const START_DATE = '2020-08-01';
-const END_DATE = '2023-08-31';
+const START_DATE = '2006-04-01';
+const END_DATE = '2022-03-31';
 const SWITCH = true;
 
 const INVESTMENT_DETAILS_FILE_PATH = 'investment_details.csv';
@@ -104,30 +104,8 @@ const generateBearishIndexesMap = async (indexes, date) => {
   return bearishIndexesMap;
 };
 
-const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
-  const investmentDetailsFile = await csvHelper.initialise(INVESTMENT_DETAILS_FILE_PATH, {
-    header: [
-      { id: 'INDEX_NAME', title: 'Index Name' },
-      { id: 'DATE', title: 'Date' },
-      { id: 'PRICE', title: 'Price' },
-      { id: 'AMOUNT', title: 'Amount'},
-      { id: 'UNITS', title: 'Units', },
-    ],
-    append: false,
-  });
-
-  const currentDate = new Date(startDate);
-  const indexesToFetch = lodash.uniq(sipDetails.map(({ index }) => index));
-  const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch);
-
-  const investedMap = {};
-  let toRet = 0;
-  let lastSip;
-
-  while (currentDate <= endDate) {
-    const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
-    // calculate returns until now
-    const firstDateMonth = moment(currentDate).startOf('month').format('YYYY-MM-DD');
+const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap) => {
+  const firstDateMonth = moment(currentDate).startOf('month').format('YYYY-MM-DD');
     let totalGainAtEOM = 0;
     let totalInvestedAtEOM = 0;
     for (const index of indexesToFetch) {
@@ -157,6 +135,9 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     };
 
     // summarize
+    if (totalInvestedAtEOM === 0) {
+      return 0; // no investment made yet;
+    }
     await csvHelper.write(indexToReturnsFileMap.total, [
       { 
         INDEX_NAME: 'total',
@@ -169,14 +150,40 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
       }
     ]);
     toRet = 100 * totalGainAtEOM/totalInvestedAtEOM;
+    return toRet;
+}
+
+const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
+  const investmentDetailsFile = await csvHelper.initialise(INVESTMENT_DETAILS_FILE_PATH, {
+    header: [
+      { id: 'INDEX_NAME', title: 'Index Name' },
+      { id: 'DATE', title: 'Date' },
+      { id: 'PRICE', title: 'Price' },
+      { id: 'AMOUNT', title: 'Amount'},
+      { id: 'UNITS', title: 'Units', },
+    ],
+    append: false,
+  });
+
+  const currentDate = new Date(startDate);
+  const indexesToFetch = lodash.uniq(sipDetails.map(({ index }) => index));
+  const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch);
+
+  const investedMap = {};
+  // let lastSip = 'NIFTY200MOMENTM30';
+
+  while (currentDate <= endDate) {
+    const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
+    // calculate returns until now & summarize
+    const returnsForThisMonth = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
 
     // const bearishIndexesMap = generateBearishIndexesMap(indexesToFetch, firstDateMonth);
     
     // make sips for month
     for (const { index, day, amount, } of sipDetails) {
-      if (SWITCH) {
-
-      }
+      // if (SWITCH && bearishIndexesMap[index] && bearishIndexesMap[index].negative) {
+      //   continue;
+      // }
       const dateStr = moment(currentDate).set('date', day).format('YYYY-MM-DD');
 
       // calculate the units to buy for sip
@@ -195,20 +202,22 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
         }
       ]);
     }
+    // done for this month, move to next month
     currentDate.setMonth(currentDate.getMonth() + 1);
   }
-
+  const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
+  const toRet = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
   return toRet;
 };
 
 (async () => {
   try {
     const SIP_DETAILS = [
-      // { day: 1, amount: 5000, index: 'NIFTY200MOMENTM30' },
-      // { day: 1, amount: 5000, index: 'NIFTY500 VALUE 50' },
-      { day: 1, amount: 5000, index: 'NIFTY 50' },
+      { day: 1, amount: 5000, index: 'NIFTY200MOMENTM30' },
+      { day: 1, amount: 5000, index: 'NIFTY500 VALUE 50' },
+      // { day: 1, amount: 5000, index: 'NIFTY 50' },
     ];
-    let currentDay = 1;
+    let currentDay = 25;
     let bestDay = 1;
     let maxGainPercentEnd = 0;
     let minGainPercentEnd = Number.MAX_SAFE_INTEGER;
