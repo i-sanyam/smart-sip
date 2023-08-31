@@ -2,7 +2,7 @@ const { indexArrayToFetch, specialStartDates, } = require('./indexMapping');
 
 const MONTHLY_INVESTMENT = 18000;
 
-const getAllCombinations = (indices) => {
+const getAllCombinations = (completeDataIndices) => {
   const toRetCombinationsArray = [];
   const startDate = 1, endDate = 1;
   for (let MONTHLY_INVESTMENT_DATE = startDate; MONTHLY_INVESTMENT_DATE <= endDate; MONTHLY_INVESTMENT_DATE++) {
@@ -40,8 +40,8 @@ const getAllCombinations = (indices) => {
   return toRetCombinationsArray;
 };
 
-const allSipCombinationsToTry = [1,1,1,1,1,1];
-// const allSipCombinationsToTry = getAllCombinations(indexArrayToFetch);
+// const allSipCombinationsToTry = [1,1,1,1,1,1];
+const allSipCombinationsToTry = getAllCombinations(indexArrayToFetch);
 
 const sipsForInitialize = indexArrayToFetch.map((index) => {
   const sipToReturn = { day: 1, amount: MONTHLY_INVESTMENT, index, };

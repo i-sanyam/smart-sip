@@ -318,21 +318,21 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 	return toRet;
 };
 
-// (async () => { // for combos
-// 	let bestXirr = 0;
-// 	let bestCombo = [];
-// 	for (const sipDetailsArray of allSipsToTry) {
-// 		const START_DATE = '2006-04-01';
-// 		const END_DATE = '2023-07-31';
-// 		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), sipDetailsArray);
-// 		console.log(START_DATE, END_DATE, JSON.stringify(sipDetailsArray), xirr);
-// 		if (xirr > bestXirr) {
-// 			bestXirr = xirr;
-// 			bestCombo = sipDetailsArray;
-// 		}
-// 	}
-// 	console.log('Best combo:', JSON.stringify(bestCombo), bestXirr);
-// })();
+(async () => { // for combos
+	let bestXirr = 0;
+	let bestCombo = [];
+	for (const sipDetailsArray of allSipsToTry) {
+		const START_DATE = '2010-04-01';
+		const END_DATE = '2022-03-31';
+		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), sipDetailsArray);
+		console.log(START_DATE, END_DATE, JSON.stringify(sipDetailsArray), xirr);
+		if (xirr > bestXirr) {
+			bestXirr = xirr;
+			bestCombo = sipDetailsArray;
+		}
+	}
+	console.log('Best combo:', JSON.stringify(bestCombo), bestXirr);
+})();
 
 const initialiseIndexAndCalculateReturns = async (sipDetail, startDate, endDate) => {
 	const xirr = await generateInvestmentPattern(new Date(startDate), new Date(endDate), [{
@@ -343,11 +343,11 @@ const initialiseIndexAndCalculateReturns = async (sipDetail, startDate, endDate)
 	return xirr;
 };
 
-(async () => { // for init
-	for (const sipDetail of sipsForInitialize) {
-		const START_DATE = sipDetail.startDate || '2006-04-01';
-		const END_DATE = '2023-07-31';
-		const xirr = await initialiseIndexAndCalculateReturns(sipDetail, START_DATE, END_DATE);
-		console.log(START_DATE, END_DATE, JSON.stringify(sipDetail), xirr);
-	}
-})();
+// (async () => { // for init
+// 	for (const sipDetail of sipsForInitialize) {
+// 		const START_DATE = sipDetail.startDate || '2006-04-01';
+// 		const END_DATE = '2023-07-31';
+// 		const xirr = await initialiseIndexAndCalculateReturns(sipDetail, START_DATE, END_DATE);
+// 		console.log(START_DATE, END_DATE, JSON.stringify(sipDetail), xirr);
+// 	}
+// })();
