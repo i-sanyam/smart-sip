@@ -9,7 +9,7 @@ const BASE_FILE_PREFIX = 'stock_prices/';
 const NIFTY_STOCK_URL = 'https://www.niftyindices.com/Backpage.aspx/getTotalReturnIndexString';
 
 let waitForApiCall = false;
-const SUCCESSIVE_API_CALL_DELAY_MS = 1000;
+const SUCCESSIVE_API_CALL_DELAY_MS = 500;
 
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -34,6 +34,7 @@ const setTimerForNseCall = () => {
 
 const fetchIndexHistoryFromNSE = async (indexName, startDate, endDate) => {
 	await waitForNseCall();
+	console.log('Calling NSE');
 	const response = await axios.post(NIFTY_STOCK_URL, {
 		name: indexName,
 		startDate: moment(startDate).format('DD-MMM-YYYY'),
