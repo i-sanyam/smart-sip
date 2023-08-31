@@ -6,7 +6,10 @@ const moment = require('moment');
 
 const { fetchStockPrices } = require('./fetchStockPrices');
 const csvHelper = require('./csvHelper');
-const allSipsToTry = require('./combinations').allSipCombinationsToTry;
+const {
+	allSipCombinationsToTry: allSipsToTry,
+	sipsForInitialize,
+} = require('./combinations');
 
 const SWITCH = false;
 const COMBOS_MODE = allSipsToTry.length > 1;
@@ -315,18 +318,31 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 	return toRet;
 };
 
-(async () => {
-	let bestXirr = 0;
-	let bestCombo = [];
-	for (const sipDetailsArray of allSipsToTry) {
-		const START_DATE = '2006-04-01';
-		const END_DATE = '2022-03-31';
-		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), sipDetailsArray);
-		console.log(START_DATE, END_DATE, JSON.stringify(sipDetailsArray), xirr);
-		if (xirr > bestXirr) {
-			bestXirr = xirr;
-			bestCombo = sipDetailsArray;
-		}
+// (async () => { // for combos
+// 	let bestXirr = 0;
+// 	let bestCombo = [];
+// 	for (const sipDetailsArray of allSipsToTry) {
+// 		const START_DATE = '2006-04-01';
+// 		const END_DATE = '2023-07-31';
+// 		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), sipDetailsArray);
+// 		console.log(START_DATE, END_DATE, JSON.stringify(sipDetailsArray), xirr);
+// 		if (xirr > bestXirr) {
+// 			bestXirr = xirr;
+// 			bestCombo = sipDetailsArray;
+// 		}
+// 	}
+// 	console.log('Best combo:', JSON.stringify(bestCombo), bestXirr);
+// })();
+
+(async () => { // for init
+	for (const sipDetail of sipsForInitialize) {
+		const START_DATE = sipDetail.startDate || '2006-04-01';
+		const END_DATE = '2023-07-31';
+		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), [{
+			amount: sipDetail.amount,
+			day: sipDetail.day,
+			index: sipDetail.index,
+		}]);
+		console.log(START_DATE, END_DATE, JSON.stringify(sipDetail), xirr);
 	}
-	console.log('Best combo:', JSON.stringify(bestCombo), bestXirr);
 })();
