@@ -181,11 +181,11 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
       { id: 'UNITS', title: 'Units', },
     ],
     append: false,
-  });
+  }); // txn history file
 
   const currentDate = new Date(startDate);
   const indexesToFetch = lodash.uniq(sipDetails.map(({ index }) => index));
-  const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch);
+  const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch); // calculates returns for only indexes
 
   const investedMap = {};
 
@@ -222,6 +222,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     // done for this month, move to next month
     currentDate.setMonth(currentDate.getMonth() + 1);
   }
+  
   const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
   const toRet = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
   return toRet;
