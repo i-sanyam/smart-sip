@@ -292,8 +292,8 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 	for (const sipDetailsArray of allSipsToTry) {
 		const START_DATE = '2006-04-01';
 		const END_DATE = '2022-03-31';
-		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS);
-		console.log(START_DATE, END_DATE, JSON.stringify(SIP_DETAILS), xirr);
+		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), sipDetailsArray);
+		console.log(START_DATE, END_DATE, JSON.stringify(sipDetailsArray), xirr);
 		if (xirr > bestXirr) {
 			bestXirr = xirr;
 			bestCombo = sipDetailsArray;
