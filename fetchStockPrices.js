@@ -5,6 +5,7 @@ const csvWriter = require('csv-writer');
 const csvHelper = require('./csvHelper');
 
 const FILE_PATH = 'stock_prices.csv';
+const BASE_FILE_PREFIX = 'stock_prices/';
 const NIFTY_STOCK_URL = 'https://www.niftyindices.com/Backpage.aspx/getTotalReturnIndexString';
 const fetchIndexHistoryFromNSE = async (indexName, startDate, endDate) => {
   const response = await axios.post(NIFTY_STOCK_URL, {
@@ -67,7 +68,7 @@ const saveStockPrices = async (filePathToUse, stockPrices) => {
 const fetchStockPrices = async (indexName, startDate, endDate) => {
   // Check if stock prices are already available in the CSV file
   indexName = indexName.toUpperCase();
-  const filePathToUse = `${indexName}_${FILE_PATH}`;
+  const filePathToUse = `${BASE_FILE_PREFIX}${indexName}_${FILE_PATH}`;
   const results = await csvHelper.readFromCSV(filePathToUse, (data) => {
     if (data.DATE >= startDate && data.DATE <= endDate) {
       return true;
