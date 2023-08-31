@@ -4,7 +4,8 @@ const MONTHLY_INVESTMENT = 18000;
 
 const getAllCombinations = (indices) => {
   const toRetCombinationsArray = [];
-  for (let MONTHLY_INVESTMENT_DATE = 1; MONTHLY_INVESTMENT_DATE <= 28; MONTHLY_INVESTMENT_DATE++) {
+  const startDate = 1, endDate = 1;
+  for (let MONTHLY_INVESTMENT_DATE = startDate; MONTHLY_INVESTMENT_DATE <= endDate; MONTHLY_INVESTMENT_DATE++) {
     for (let i = 0; i < completeDataIndices.length; i++) {
       // single index combinations
       toRetCombinationsArray.push([
@@ -38,7 +39,9 @@ const getAllCombinations = (indices) => {
   }
   return toRetCombinationsArray;
 };
-const allSipCombinationsToTry = [1,1,1,1,1,1]; // getAllCombinations(indexArrayToFetch);
+
+const allSipCombinationsToTry = [1,1,1,1,1,1];
+// const allSipCombinationsToTry = getAllCombinations(indexArrayToFetch);
 
 const sipsForInitialize = indexArrayToFetch.map((index) => {
   const sipToReturn = { day: 1, amount: MONTHLY_INVESTMENT, index, };

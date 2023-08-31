@@ -334,15 +334,20 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 // 	console.log('Best combo:', JSON.stringify(bestCombo), bestXirr);
 // })();
 
+const initialiseIndexAndCalculateReturns = async (sipDetail, startDate, endDate) => {
+	const xirr = await generateInvestmentPattern(new Date(startDate), new Date(endDate), [{
+		amount: sipDetail.amount,
+		day: sipDetail.day,
+		index: sipDetail.index,
+	}]);
+	return xirr;
+};
+
 (async () => { // for init
 	for (const sipDetail of sipsForInitialize) {
 		const START_DATE = sipDetail.startDate || '2006-04-01';
 		const END_DATE = '2023-07-31';
-		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), [{
-			amount: sipDetail.amount,
-			day: sipDetail.day,
-			index: sipDetail.index,
-		}]);
+		const xirr = await initialiseIndexAndCalculateReturns(sipDetail, START_DATE, END_DATE);
 		console.log(START_DATE, END_DATE, JSON.stringify(sipDetail), xirr);
 	}
 })();

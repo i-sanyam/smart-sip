@@ -780,7 +780,8 @@ const indexWithMutualFunds = [
 console.log('to fetch', indexWithMutualFunds.length, 'indices');
 
 const specialStartDates = {
-  
+  'NIFTY100 QUALTY30': '2010-04-01',
+  'NIFTY50 VALUE 20': '2009-04-01',
 };
 
 const indexArrayToFetch = indexWithMutualFunds.map(indexPrettyName => {
