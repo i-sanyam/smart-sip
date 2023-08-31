@@ -188,18 +188,24 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch); // calculates returns for only indexes
 
   const investedMap = {};
-
+  let lastSip = 'NIFTY200MOMENTM30'; // start from momentum
+  let nSwitches = 0;
   while (currentDate <= endDate) {
     const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
     // calculate returns until now & summarize
     const returnsForThisMonth = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
 
-    const sipForThisMonth = await getThisMonthSip(indexesToFetch, currentDate, 'NIFTY200MOMENTM30');
+    const sipForThisMonth = await getThisMonthSip(indexesToFetch, currentDate, lastSip);
     // make sips for month
     for (const { index, day, amount, } of sipDetails) {
       if (sipForThisMonth && sipForThisMonth !== index) {
         continue;
       }
+      if (sipForThisMonth && sipForThisMonth !== lastSip) {
+        // got switched
+        nSwitches++;
+      }
+      lastSip = index;
 
       const dateStr = moment(currentDate).set('date', day).format('YYYY-MM-DD');
 
@@ -225,6 +231,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   
   const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
   const toRet = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
+  console.log(`Switches: ${nSwitches}`);
   return toRet;
 };
 
