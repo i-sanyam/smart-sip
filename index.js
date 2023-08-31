@@ -1,5 +1,3 @@
-const START_DATE = '2006-04-01';
-const END_DATE = '2022-03-31';
 const SWITCH = false;
 const USE_CLOSING_MONTH_PRICE_FOR_BEARISH_INDICES = true;
 
@@ -287,40 +285,22 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 	return toRet;
 };
 
-(async () => {
+const calculateAndPrintXirr = async (startDate, endDate, SIP_DETAILS) => {
 	try {
-		const SIP_DETAILS = [
-			// { day: 1, amount: 10000, index: 'NIFTY200MOMENTM30' }, // data complete
-			// { day: 1, amount: 10000, index: 'NIFTY500 VALUE 50' }, // data complete
-			// { day: 1, amount: 10000, index: 'NIFTY50 VALUE 20' },
-
-			// { day: 1, amount: 10000, index: 'NIFTY 50' }, // data complete
-			// { day: 1, amount: 10000, index: 'NIFTY NEXT 50' }, // data complete
-
-			{ day: 1, amount: 10000, index: 'NIFTY MIDCAP 150' },
-			// { day: 1, amount: 10000, index: 'NIFTY MIDCAP 100' },
-			// { day: 1, amount: 10000, index: 'NIFTY MIDCAP 50' },
-			// { day: 1, amount: 10000, index: 'NIFTY M150 QLTY50' },
-			// { day: 1, amount: 10000, index: 'NIFTY MID SELECT' },
-
-			// { day: 1, amount: 10000, index: 'NIFTY SMLCAP 50' },
-			// { day: 1, amount: 10000, index: 'NIFTY SMLCAP 250' }, // data complete
-
-			// { day: 1, amount: 10000, index: 'NIFTY LARGEMID250' }, // data complete
-		];
 		// let currentDay = 1;
 		// let bestDay = 1;
 		// let maxGainPercentEnd = 0;
 		// let minGainPercentEnd = Number.MAX_SAFE_INTEGER;
 		// let worstDay = 1;
 		// while (currentDay < 29) { // if you use while loop that returns sheets do not make sense as of now
-		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS.map(sip => {
+		const xirr = await generateInvestmentPattern(new Date(startDate), new Date(endDate), SIP_DETAILS.map(sip => {
 			return {
 				...sip,
 				// day: currentDay,
 			}
 		}));
-		console.log(START_DATE, END_DATE, JSON.stringify(SIP_DETAILS), xirr);
+		console.log(startDate, endDate, JSON.stringify(SIP_DETAILS), xirr);
+		return xirr;
 		// if (gainPercentEnd > maxGainPercentEnd) {
 		// 	maxGainPercentEnd = gainPercentEnd;
 		// 	bestDay = currentDay;
@@ -338,4 +318,20 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 	} catch (e) {
 		console.error(e);
 	}
+};
+
+(async () => {
+	let bestXirr = 0;
+	let bestCombo = [];
+	const allSipsToTry = require('./combinations').allSipCombinationsToTry;
+	for (const sipDetailsArray of allSipsToTry) {
+		const START_DATE = '2006-04-01';
+		const END_DATE = '2022-03-31';
+		const xirr = await calculateAndPrintXirr(START_DATE, END_DATE, sipDetailsArray);
+		if (xirr > bestXirr) {
+			bestXirr = xirr;
+			bestCombo = sipDetailsArray;
+		}
+	}
+	console.log('Best combo:', JSON.stringify(bestCombo), bestXirr);
 })();
