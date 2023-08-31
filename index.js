@@ -1,6 +1,7 @@
 const START_DATE = '2006-04-01';
 const END_DATE = '2022-03-31';
 const SWITCH = true;
+const USE_CLOSING_MONTH_PRICE_FOR_BEARISH_INDICES = true;
 
 const INVESTMENT_DETAILS_FILE_PATH = 'investment_details.csv';
 
@@ -77,7 +78,10 @@ const generateBearishIndexesMap = async (indexes, inputCurrentDate) => {
   const date = moment(inputCurrentDate).startOf('month').format('YYYY-MM-DD');
   const bearishIndexesMap = {};
   const datesToCheck = [1,2,3].map((num) => {
-    return moment(date).subtract(num,'month').endOf('month').format('YYYY-MM-DD');
+    if (USE_CLOSING_MONTH_PRICE_FOR_BEARISH_INDICES) {
+      return moment(date).subtract(num,'month').endOf('month').format('YYYY-MM-DD');
+    }
+    return moment(date).subtract(num,'month').startOf('month').format('YYYY-MM-DD');
   });
 
   // const indexesStockPriceMap = {};
@@ -162,7 +166,7 @@ const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexT
       currentDate: firstDateMonth,
       currentPrice: totalInvestedAtEOM + totalGainAtEOM,
     });
-    
+
     await csvHelper.write(indexToReturnsFileMap.total, [
       { 
         INDEX_NAME: 'total',
@@ -281,7 +285,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
     const SIP_DETAILS = [
       { day: 1, amount: 10000, index: 'NIFTY200MOMENTM30' },
       { day: 1, amount: 10000, index: 'NIFTY500 VALUE 50' },
-      // { day: 1, amount: 5000, index: 'NIFTY 50' },
+      // { day: 1, amount: 10000, index: 'NIFTY 50' },
     ];
     let currentDay = 1;
     let bestDay = 1;
