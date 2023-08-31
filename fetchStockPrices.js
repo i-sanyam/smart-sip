@@ -1,12 +1,13 @@
-const csvParser = require('csv-parser');
 const fs = require('fs');
 const axios = require('axios');
 const moment = require('moment');
 const csvWriter = require('csv-writer');
+const csvHelper = require('./csvHelper');
 
 const FILE_PATH = 'stock_prices.csv';
+const NIFTY_STOCK_URL = 'https://www.niftyindices.com/Backpage.aspx/getTotalReturnIndexString';
 const fetchIndexHistoryFromNSE = async (indexName, startDate, endDate) => {
-  const response = await axios.post('https://www.niftyindices.com/Backpage.aspx/getTotalReturnIndexString', {
+  const response = await axios.post(NIFTY_STOCK_URL, {
     name: indexName,
     startDate: moment(startDate).format('DD-MMM-YYYY'),
     endDate: moment(endDate).format('DD-MMM-YYYY'),
@@ -67,28 +68,15 @@ const fetchStockPrices = async (indexName, startDate, endDate) => {
   // Check if stock prices are already available in the CSV file
   indexName = indexName.toUpperCase();
   const filePathToUse = `${indexName}_${FILE_PATH}`;
-  const results = await new Promise((resolve) => {
-    const fileExists = fs.existsSync(filePathToUse);
-    if (!fileExists) {
-      return resolve([]);
+  const results = await csvHelper.readFromCSV(filePathToUse, (data) => {
+    if (data.DATE >= startDate && data.DATE <= endDate) {
+      return true;
     }
-    const records = [];
-    fs.createReadStream(filePathToUse)
-    .pipe(csvParser())
-    .on('data', (data) => {
-      // if (data.INDEX_NAME.toUpperCase() === indexName.toUpperCase()) {
-        if (data.DATE >= startDate && data.DATE <= endDate) {
-          records.push(data);
-        }
-      // }
-    })
-    .on('end', () => {
-      if (records.length > 0) {
-        console.log(indexName, startDate, endDate, 'Stock prices found in CSV file:', records.length);
-      }
-      return resolve(records);
-    });
+    return false;
   });
+  if (results.length > 0) {
+    console.log(indexName, startDate, endDate, 'Stock prices found in CSV file:', results.length);
+  }
 
   if (results.length === 0) {
     // If stock prices are not available in the CSV file, fetch them from the API

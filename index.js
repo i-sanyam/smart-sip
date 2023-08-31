@@ -158,6 +158,10 @@ const getThisMonthSip = async (indexesToFetch, currentDate, lastSip) => {
   if (!SWITCH) {
     return false;
   }
+  if (moment(currentDate).startOf('month').format('YYYY-MM-DD') === '2021-04-01') {
+    // bone of contention;;
+    console.log('bone of contention');
+  }
   const bearishIndexesMap = await generateBearishIndexesMap(indexesToFetch, currentDate);
   let prefferedSip;
   for (const index in bearishIndexesMap) {
