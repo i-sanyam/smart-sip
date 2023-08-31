@@ -7,7 +7,33 @@ const csvHelper = require('./csvHelper');
 const FILE_PATH = 'stock_prices.csv';
 const BASE_FILE_PREFIX = 'stock_prices/';
 const NIFTY_STOCK_URL = 'https://www.niftyindices.com/Backpage.aspx/getTotalReturnIndexString';
+
+let waitForApiCall = false;
+const SUCCESSIVE_API_CALL_DELAY_MS = 1000;
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+const waitForNseCall = () => {
+  return new Promise(async (resolve) => {
+    while (waitForApiCall) {
+      console.log('Waiting for NSE API call timer to complete');
+      await sleep(500);
+    }
+    resolve();
+  });
+};
+
+const setTimerForNseCall = () => {
+  waitForApiCall = true;
+  setTimeout(() => {
+    waitForApiCall = false;
+  }, SUCCESSIVE_API_CALL_DELAY_MS);
+};
+
 const fetchIndexHistoryFromNSE = async (indexName, startDate, endDate) => {
+  await waitForNseCall();
   const response = await axios.post(NIFTY_STOCK_URL, {
     name: indexName,
     startDate: moment(startDate).format('DD-MMM-YYYY'),
@@ -30,6 +56,7 @@ const fetchIndexHistoryFromNSE = async (indexName, startDate, endDate) => {
       'sec-ch-ua-platform': '"macOS"'
     }
   });
+  setTimerForNseCall();
 
   // Parse the response and extract the stock prices
   if (response.status !== 200 || !response?.data?.d) {
@@ -75,9 +102,9 @@ const fetchStockPrices = async (indexName, startDate, endDate) => {
     }
     return false;
   });
-  if (results.length > 0) {
-    console.log(indexName, startDate, endDate, 'Stock prices found in CSV file:', results.length);
-  }
+  // if (results.length > 0) {
+  //   console.log(indexName, startDate, endDate, 'Stock prices found in CSV file:', results.length);
+  // }
 
   if (results.length === 0) {
     // If stock prices are not available in the CSV file, fetch them from the API

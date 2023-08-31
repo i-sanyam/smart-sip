@@ -290,15 +290,23 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 (async () => {
   try {
     const SIP_DETAILS = [
-      { day: 1, amount: 10000, index: 'NIFTY200MOMENTM30' },
-      { day: 1, amount: 10000, index: 'NIFTY500 VALUE 50' },
-      { day: 1, amount: 10000, index: 'NIFTY 50' },
-      { day: 1, amount: 10000, index: 'NIFTY NEXT 50' },
-      { day: 1, amount: 10000, index: 'NIFTY MIDCAP 150' },
-      { day: 1, amount: 10000, index: 'NIFTY MIDCAP 100' },
-      { day: 1, amount: 10000, index: 'NIFTY MIDCAP 50' },
-      { day: 1, amount: 10000, index: 'NIFTY SMLCAP 50' },
-      { day: 1, amount: 10000, index: 'NIFTY SMLCAP 250' },
+      // { day: 1, amount: 10000, index: 'NIFTY200MOMENTM30' },
+      // { day: 1, amount: 10000, index: 'NIFTY500 VALUE 50' },
+      // { day: 1, amount: 10000, index: 'NIFTY50 VALUE 20' },
+
+      // { day: 1, amount: 10000, index: 'NIFTY 50' },
+      // { day: 1, amount: 10000, index: 'NIFTY NEXT 50' },
+
+      // { day: 1, amount: 10000, index: 'NIFTY MIDCAP 150' },
+      // { day: 1, amount: 10000, index: 'NIFTY MIDCAP 100' },
+      // { day: 1, amount: 10000, index: 'NIFTY MIDCAP 50' },
+      // { day: 1, amount: 10000, index: 'NIFTY M150 QLTY50' },
+      // { day: 1, amount: 10000, index: 'NIFTY MID SELECT' },
+
+      // { day: 1, amount: 10000, index: 'NIFTY SMLCAP 50' },
+      // { day: 1, amount: 10000, index: 'NIFTY SMLCAP 250' },
+
+      { day: 1, amount: 10000, index: 'NIFTY LARGEMID250' },
     ];
     let currentDay = 1;
     let bestDay = 1;
