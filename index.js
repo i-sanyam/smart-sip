@@ -4,6 +4,7 @@ const SWITCH = true;
 
 const INVESTMENT_DETAILS_FILE_PATH = 'investment_details.csv';
 
+const Finance = require('financejs');
 const lodash = require('lodash');
 const moment = require('moment');
 const { fetchStockPrices } = require('./fetchStockPrices');
@@ -57,6 +58,7 @@ const generateReturnFilesMap = async (indexes) => {
     { id: 'INVESTED_AMOUNT', title: 'Amount', },
     { id: 'GAIN', title: 'GAIN', },
     { id: 'GAIN_PERCENTAGE', title: 'GAIN_PERCENTAGE', },
+    { id: 'XIRR', title: 'XIRR', },
   ];
   for (const index of indexes) {
     const returnFile = await csvHelper.initialise(`${index}_returns.csv`, {
@@ -105,7 +107,17 @@ const generateBearishIndexesMap = async (indexes, inputCurrentDate) => {
   return bearishIndexesMap;
 };
 
-const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap) => {
+const caculateXirr = (transactions, { currentPrice, currentDate}) => {
+  const finance = new Finance();
+  const allAmounts = transactions.map(({ amount }) => amount);
+  const allDates = transactions.map(({ date }) => new Date(date));
+  allAmounts.push(-currentPrice);
+  allDates.push(new Date(currentDate));
+  const xirr = finance.XIRR(allAmounts, allDates, 0);
+  return xirr;
+};
+
+const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap, trxnDetailsMap) => {
   const firstDateMonth = moment(currentDate).startOf('month').format('YYYY-MM-DD');
     let totalGainAtEOM = 0;
     let totalInvestedAtEOM = 0;
@@ -119,6 +131,11 @@ const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexT
       const gainAmount = (units * todayStockPrice) - amount;
       const gainPercentage = (gainAmount / amount) * 100;
 
+      const xirr = caculateXirr(trxnDetailsMap[index], {
+        currentPrice: amount + gainAmount,
+        currentDate: firstDateMonth
+      });
+
       totalGainAtEOM += gainAmount;
       totalInvestedAtEOM += amount;
 
@@ -131,6 +148,7 @@ const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexT
           INVESTED_AMOUNT: amount,
           GAIN: gainAmount,
           GAIN_PERCENTAGE: gainPercentage,
+          XIRR: xirr,
         }
       ]);
     };
@@ -139,6 +157,12 @@ const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexT
     if (totalInvestedAtEOM === 0) {
       return 0; // no investment made yet;
     }
+
+    const totalXirr = caculateXirr(Object.values(trxnDetailsMap).flat(), {
+      currentDate: firstDateMonth,
+      currentPrice: totalInvestedAtEOM + totalGainAtEOM,
+    });
+    
     await csvHelper.write(indexToReturnsFileMap.total, [
       { 
         INDEX_NAME: 'total',
@@ -148,6 +172,7 @@ const summarizeReturns = async (currentDate, indexesToFetch, investedMap, indexT
         INVESTED_AMOUNT: totalInvestedAtEOM,
         GAIN: totalGainAtEOM,
         GAIN_PERCENTAGE: 100 * (totalGainAtEOM / totalInvestedAtEOM),
+        XIRR: totalXirr,
       }
     ]);
     toRet = 100 * totalGainAtEOM/totalInvestedAtEOM;
@@ -175,6 +200,16 @@ const getThisMonthSip = async (indexesToFetch, currentDate, lastSip) => {
   return prefferedSip || lastSip;
 };
 
+const addToTrxnDetailsMap = (map, index, date, price, amount, units) => {
+  if (!map[index]) {
+    map[index] = [];
+  }
+  map[index].push({
+    date,
+    amount,
+  });
+};
+
 const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   const investmentDetailsFile = await csvHelper.initialise(INVESTMENT_DETAILS_FILE_PATH, {
     header: [
@@ -192,12 +227,13 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   const indexToReturnsFileMap = await generateReturnFilesMap(indexesToFetch); // calculates returns for only indexes
 
   const investedMap = {};
+  const trxnDetailsMap = {};
   let lastSip = 'NIFTY200MOMENTM30'; // start from momentum
   let nSwitches = 0;
   while (currentDate <= endDate) {
     const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
     // calculate returns until now & summarize
-    const returnsForThisMonth = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
+    const returnsForThisMonth = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap, trxnDetailsMap);
 
     const sipForThisMonth = await getThisMonthSip(indexesToFetch, currentDate, lastSip);
     // make sips for month
@@ -219,6 +255,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 
       // logging & make sip for today
       addToInvestedMap(investedMap, index, amount, units);
+      addToTrxnDetailsMap(trxnDetailsMap, index, dateStr, price, amount, units);
       await csvHelper.write(investmentDetailsFile, [
         {
           INDEX_NAME: index,
@@ -234,7 +271,7 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
   }
   
   const indexToStockPricesMap = await getIndexToMonthStockPricesMap(indexesToFetch, currentDate);
-  const toRet = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap);
+  const toRet = await summarizeReturns(currentDate, indexesToFetch, investedMap, indexToReturnsFileMap, indexToStockPricesMap, trxnDetailsMap);
   console.log(`Switches: ${nSwitches}`);
   return toRet;
 };
