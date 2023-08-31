@@ -285,41 +285,6 @@ const generateInvestmentPattern = async (startDate, endDate, sipDetails) => {
 	return toRet;
 };
 
-const calculateAndPrintXirr = async (startDate, endDate, SIP_DETAILS) => {
-	try {
-		// let currentDay = 1;
-		// let bestDay = 1;
-		// let maxGainPercentEnd = 0;
-		// let minGainPercentEnd = Number.MAX_SAFE_INTEGER;
-		// let worstDay = 1;
-		// while (currentDay < 29) { // if you use while loop that returns sheets do not make sense as of now
-		const xirr = await generateInvestmentPattern(new Date(startDate), new Date(endDate), SIP_DETAILS.map(sip => {
-			return {
-				...sip,
-				// day: currentDay,
-			}
-		}));
-		console.log(startDate, endDate, JSON.stringify(SIP_DETAILS), xirr);
-		return xirr;
-		// if (gainPercentEnd > maxGainPercentEnd) {
-		// 	maxGainPercentEnd = gainPercentEnd;
-		// 	bestDay = currentDay;
-		// }
-		// if (gainPercentEnd < minGainPercentEnd) {
-		// 	minGainPercentEnd = gainPercentEnd;
-		// 	worstDay = currentDay;
-		// }
-		// currentDay++;
-		// }
-		// return console.log(`
-		// 	Best day: ${bestDay}, Best gain: ${maxGainPercentEnd}
-		// 	Worst day: ${worstDay} Worst gain: ${minGainPercentEnd}
-		// `);
-	} catch (e) {
-		console.error(e);
-	}
-};
-
 (async () => {
 	let bestXirr = 0;
 	let bestCombo = [];
@@ -327,7 +292,8 @@ const calculateAndPrintXirr = async (startDate, endDate, SIP_DETAILS) => {
 	for (const sipDetailsArray of allSipsToTry) {
 		const START_DATE = '2006-04-01';
 		const END_DATE = '2022-03-31';
-		const xirr = await calculateAndPrintXirr(START_DATE, END_DATE, sipDetailsArray);
+		const xirr = await generateInvestmentPattern(new Date(START_DATE), new Date(END_DATE), SIP_DETAILS);
+		console.log(START_DATE, END_DATE, JSON.stringify(SIP_DETAILS), xirr);
 		if (xirr > bestXirr) {
 			bestXirr = xirr;
 			bestCombo = sipDetailsArray;
